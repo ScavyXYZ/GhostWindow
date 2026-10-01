@@ -1,0 +1,5 @@
+LIBRARY GhostWindow
+EXPORTS
+    GhostVersion
+    StealthHide
+    StealthShow
