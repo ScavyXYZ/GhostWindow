@@ -49,7 +49,7 @@ MOD_SHIFT    = 0x0004
 MOD_NOREPEAT = 0x4000
 HOTKEY_ID    = 1
 
-VK_F1           = 0x70
+VK_F3           = 0x72
 VK_MENU         = 0x12
 KEYEVENTF_KEYUP = 0x0002
 

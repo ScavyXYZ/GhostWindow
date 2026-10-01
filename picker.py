@@ -74,3 +74,4 @@ class PickerOverlay(QWidget):
         self.timer.stop()
         self.close()
         self.finished.emit(None)
+        

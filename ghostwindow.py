@@ -4,7 +4,7 @@ import ctypes
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from winapi import user32, HOTKEY_ID, MOD_CONTROL, MOD_SHIFT, MOD_NOREPEAT, VK_F1
+from winapi import user32, HOTKEY_ID, MOD_CONTROL, MOD_SHIFT, MOD_NOREPEAT, VK_F3
 from constants import DLL_NAME, DLL_PATH, STYLESHEET, HOTKEY_TEXT
 from hotkey import HotkeyFilter
 from main_window import GhostWindow
@@ -42,7 +42,7 @@ def main():
     hotkey_filter = HotkeyFilter(HOTKEY_ID, win.on_hotkey)
 
     if user32.RegisterHotKey(None, HOTKEY_ID,
-                             MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_F1):
+                             MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_F3):
         app.installNativeEventFilter(hotkey_filter)
         app.aboutToQuit.connect(
             lambda: user32.UnregisterHotKey(None, HOTKEY_ID))
