@@ -1,33 +1,33 @@
 # GhostWindow
 
-**GhostWindow** — утиліта для Windows, яка приховує будь-яке вікно від захоплення екрана (OBS, Zoom, Discord тощо), прибирає його з панелі задач і Alt+Tab, і тримає поверх інших вікон.
+**GhostWindow** — a Windows utility that hides any window from screen capture (OBS, Zoom, Discord, etc.), removes it from the taskbar and Alt+Tab, and keeps it on top of other windows.
 
-Працює через інжекцію DLL у цільовий процес і використання `SetWindowDisplayAffinity` (Windows 10 2004+).
-
----
-
-## Можливості
-
-- Приховування вікна від захоплення екрана (OBS, Zoom, Discord, Teams, тощо)
-- Видалення з панелі задач і Alt+Tab
-- Закріплення поверх інших вікон
-- Гаряча клавіша `Ctrl+Shift+F1` — показати/сховати саму GhostWindow
-- Вибір вікна під курсором (pick mode з таймером)
-- Watchdog — автоматичне повторне приховування, якщо цільовий процес скидає стилі
-- Відновлення вікон по одному або все разом при виході
+Works by injecting a DLL into the target process and using `SetWindowDisplayAffinity` (Windows 10 2004+).
 
 ---
 
-## Вимоги
+## Features
 
-- Windows 10 2004+ або Windows 11
+- Hide a window from screen capture (OBS, Zoom, Discord, Teams, etc.)
+- Remove from taskbar and Alt+Tab
+- Keep on top of other windows
+- Hotkey `Ctrl+Shift+F1` — show/hide GhostWindow itself
+- Pick mode with countdown timer to select a window under the cursor
+- Watchdog — automatically re-hides if the target process resets window styles
+- Restore windows individually or all at once on exit
+
+---
+
+## Requirements
+
+- Windows 10 2004+ or Windows 11
 - Python 3.10+
 - [PySide6](https://pypi.org/project/PySide6/)
-- Права адміністратора (для інжекції в процеси інших користувачів / elevated)
+- Administrator rights (for injecting into elevated or other-user processes)
 
 ---
 
-## Встановлення
+## Installation
 
 ```bash
 git clone https://github.com/yourusername/GhostWindow.git
@@ -37,9 +37,9 @@ pip install PySide6
 
 ---
 
-## Збірка GhostWindow.dll
+## Building GhostWindow.dll
 
-DLL уже зібрана і лежить у репозиторії. Якщо потрібно перізбрати:
+The DLL is already built and included in the repository. To rebuild:
 
 ### Visual Studio (MSVC)
 
@@ -56,87 +56,87 @@ g++ -O2 -shared -o GhostWindow.dll GhostWindow.cpp GhostWindow.def -luser32 -sta
 
 ---
 
-## Використання
+## Usage
 
-### Запуск
+### Running
 
 ```bash
-:: Запуск від імені адміністратора (рекомендовано)
+:: Run as administrator (recommended)
 python ghostwindow.py
 ```
 
-### Як приховати вікно
+### Hiding a window
 
-1. Натисніть **"Pick a window"** — з'явиться таймер на 5 секунд
-2. Наведіть курсор на цільове вікно за цей час
-3. Після вибору натисніть **"Hide"**
-4. Вікно зникне з панелі задач, захоплення екрана та Alt+Tab
+1. Click **"Pick a window"** — a 5-second countdown appears
+2. Point your cursor at the target window during the countdown
+3. After selection, click **"Hide"**
+4. The window disappears from the taskbar, screen capture, and Alt+Tab
 
-### Як показати вікно назад
+### Showing a window again
 
-- Виберіть його у списку **"HIDDEN WINDOWS"** і натисніть **"Show"** або **"Restore"**
-- Або натисніть **"Restore"** у нижній панелі для відновлення всіх
+- Select it in the **"HIDDEN WINDOWS"** list and click **"Show"** or **"Restore"**
+- Or click **"Restore"** in the bottom bar to restore all windows
 
-### Гаряча клавіша
+### Hotkey
 
-- `Ctrl+Shift+F1` — показати/сховати вікно GhostWindow
-- Під час pick mode — скасувати вибір
+- `Ctrl+Shift+F1` — show/hide the GhostWindow window
+- During pick mode — cancel the selection
 
-### Кнопки
+### Buttons
 
-| Кнопка | Дія |
-|--------|-----|
-| **Pick a window** | Вибір вікна під курсором |
-| **Hide GhostWindow** | Сховати саму GhostWindow |
-| **Hide** | Приховати вибране вікно |
-| **Show** | Показати вибране вікно |
-| **Bring to front** | Активувати вибране вікно |
-| **Refresh** | Оновити список прихованих вікон |
-| **Restore** | Відновити вибране вікно (зняти з приховування) |
-| **Forget** | Прибрати зі списку (вікно лишається прихованим) |
-| **Quit** | Вийти, відновивши всі вікна |
+| Button | Action |
+|--------|--------|
+| **Pick a window** | Select a window under the cursor |
+| **Hide GhostWindow** | Hide GhostWindow itself |
+| **Hide** | Hide the selected window |
+| **Show** | Show the selected window |
+| **Bring to front** | Activate the selected window |
+| **Refresh** | Refresh the hidden windows list |
+| **Restore** | Restore the selected window (un-hide) |
+| **Forget** | Remove from the list (window stays hidden) |
+| **Quit** | Exit, restoring all windows |
 
 ---
 
-## Структура проєкту
+## Project Structure
 
 ```
 GhostWindow/
-├── ghostwindow.py    — точка входу
-├── main_window.py    — головне вікно, UI, логіка
-├── winapi.py         — константи WinAPI, ctypes-декларації
-├── helpers.py        — функції для роботи з вікнами та процесами
-├── injection.py      — інжекція DLL та виклик експортів
-├── constants.py      — константи та стилі
-├── hotkey.py         — фільтр глобальної гарячої клавіші
-├── titlebar.py       — кастомний заголовок вікна
-├── picker.py         — оверлей для вибору вікна
-├── GhostWindow.cpp   — джерело DLL
-├── GhostWindow.def   — експорти DLL
-└── GhostWindow.dll   — зібрана DLL
+├── ghostwindow.py    — entry point
+├── main_window.py    — main window, UI, logic
+├── winapi.py         — WinAPI constants, ctypes declarations
+├── helpers.py        — window/process helper functions
+├── injection.py      — DLL injection and remote export calling
+├── constants.py      — constants and styles
+├── hotkey.py         — global hotkey filter
+├── titlebar.py       — custom title bar widget
+├── picker.py         — picker overlay for window selection
+├── GhostWindow.cpp   — DLL source
+├── GhostWindow.def   — DLL exports
+└── GhostWindow.dll   — built DLL
 ```
 
 ---
 
-## Як це працює
+## How It Works
 
-1. **Інжекція** — `LoadLibraryW` через `CreateRemoteThread` зі шляхом до DLL
-2. **StealthHide** — DLL викликає:
-   - `SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)` — виключення з захоплення
-   - `WS_EX_TOOLWINDOW` — прибирання з панелі задач
-   - `HWND_TOPMOST` — закріплення поверх
-3. **StealthShow** — відновлення оригінального стану (стилі зберігаються у window properties)
-
----
-
-## Відомі обмеження
-
-- Деякі антічіти можуть блокувати інжекцію DLL
-- Вікна UWP/Store можуть не підтримувати `SetWindowDisplayAffinity`
-- Для інжекції в elevated-процеси потрібні права адміністратора
+1. **Injection** — `LoadLibraryW` via `CreateRemoteThread` with the DLL path
+2. **StealthHide** — the DLL calls:
+   - `SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)` — exclude from capture
+   - `WS_EX_TOOLWINDOW` — remove from taskbar
+   - `HWND_TOPMOST` — keep on top
+3. **StealthShow** — restore the original state (styles are saved in window properties)
 
 ---
 
-## Ліцензія
+## Known Limitations
+
+- Some anti-cheats may block DLL injection
+- UWP/Store apps may not support `SetWindowDisplayAffinity`
+- Administrator rights are required to inject into elevated processes
+
+---
+
+## License
 
 MIT
