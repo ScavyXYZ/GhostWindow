@@ -1,7 +1,3 @@
-"""
-Custom title bar widget for the frameless main window.
-"""
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton
 

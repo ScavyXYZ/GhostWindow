@@ -1,7 +1,3 @@
-"""
-DLL injection and remote export calling.
-"""
-
 import os
 import time
 import ctypes
@@ -58,10 +54,6 @@ def inject_dll(pid, dll_path):
 
 
 def call_export(pid, dll_name, dll_path, func_name, param=0):
-    """Call an exported DWORD WINAPI f(LPVOID) inside the target process.
-
-    Raises OSError if the remote export returned a non-zero error code.
-    """
     from helpers import find_module_base
 
     dll_path = os.path.abspath(dll_path)

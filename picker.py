@@ -1,7 +1,3 @@
-"""
-Picker overlay — countdown window for selecting a target under the cursor.
-"""
-
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
 
@@ -69,7 +65,7 @@ class PickerOverlay(QWidget):
             self.remaining -= 1
             return
         self.timer.stop()
-        self.hide()   # out of hit-testing BEFORE WindowFromPoint
+        self.hide()
         hwnd = window_under_cursor()
         self.close()
         self.finished.emit(hwnd)

@@ -1,7 +1,3 @@
-"""
-Application-wide constants and stylesheet.
-"""
-
 import os
 
 DLL_NAME    = "GhostWindow.dll"

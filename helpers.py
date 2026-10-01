@@ -1,7 +1,3 @@
-"""
-Window and process helper functions.
-"""
-
 import os
 import ctypes
 from ctypes import wintypes
@@ -88,7 +84,6 @@ def find_module_base(pid, dll_name):
 
 
 def stealth_is_active(hwnd):
-    """True if the window still has capture-exclusion enabled."""
     if not hwnd or not user32.IsWindow(hwnd):
         return False
     aff = wintypes.DWORD(0)
@@ -112,19 +107,14 @@ def _restore_window(hwnd):
 
 
 def force_foreground(hwnd):
-    """Bring hwnd to the foreground even from a background process.
-
-    Windows blocks SetForegroundWindow from processes that don't own the
-    current foreground window. A quick ALT press/release unlocks it.
-    """
     try:
         if user32.IsIconic(hwnd):
             user32.ShowWindow(hwnd, SW_RESTORE)
         else:
             user32.ShowWindow(hwnd, SW_SHOW)
 
-        user32.keybd_event(VK_MENU, 0, 0, None)                # ALT down
-        user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, None)  # ALT up
+        user32.keybd_event(VK_MENU, 0, 0, None)
+        user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, None)
 
         user32.SetForegroundWindow(hwnd)
     except Exception:
@@ -132,7 +122,6 @@ def force_foreground(hwnd):
 
 
 def apply_stealth_to_hwnd(hwnd):
-    """Local (same-process) variant used on GhostWindow's own windows."""
     try:
         hwnd = get_root(hwnd)
         if not hwnd:
@@ -153,6 +142,6 @@ def hide_console():
     try:
         hwnd = kernel32.GetConsoleWindow()
         if hwnd:
-            user32.ShowWindow(hwnd, 0)  # SW_HIDE
+            user32.ShowWindow(hwnd, 0)
     except Exception:
         pass

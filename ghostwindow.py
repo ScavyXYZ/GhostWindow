@@ -1,26 +1,3 @@
-"""
-GhostWindow — hides a specific window from OBS / Zoom / Discord,
-removes it from the taskbar, keeps it always on top.
-
-UI: PySide6. Minimal dark interface.
-Hotkey Ctrl+Shift+F1 — show/hide the GhostWindow window.
-The "Quit" button restores all windows, detaches the DLL, and exits.
-Run as administrator.
-
-Files:
-    ghostwindow.py  — this file (entry point)
-    main_window.py  — main window UI and logic
-    winapi.py       — WinAPI constants and ctypes declarations
-    helpers.py      — window/process helper functions
-    injection.py    — DLL injection and remote export calling
-    constants.py    — app-wide constants and stylesheet
-    hotkey.py       — global hotkey filter
-    titlebar.py     — custom title bar widget
-    picker.py       — picker overlay for window selection
-    GhostWindow.dll — built from GhostWindow.cpp (see its header)
-    GhostWindow.def — export definitions
-"""
-
 import os
 import sys
 import ctypes
@@ -62,14 +39,7 @@ def main():
             "Restart the program as administrator for full functionality.")
         win._set_status("No admin rights — injection may fail", "err")
 
-    # Global hotkey Ctrl+Shift+F1 — registered for the main thread,
-    # delivered through Qt's message loop (no hook thread needed).
-    #
-    # FIX: keep a Python reference to the filter. Previously the filter
-    # object was created inline inside installNativeEventFilter(...);
-    # Qt does NOT take ownership of native event filters, so the garbage
-    # collector destroyed the C++ object and WM_HOTKEY was silently lost.
-    hotkey_filter = HotkeyFilter(HOTKEY_ID, win.on_hotkey)   # keep alive!
+    hotkey_filter = HotkeyFilter(HOTKEY_ID, win.on_hotkey)
 
     if user32.RegisterHotKey(None, HOTKEY_ID,
                              MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_F1):

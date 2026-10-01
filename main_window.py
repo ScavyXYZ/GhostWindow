@@ -1,7 +1,3 @@
-"""
-GhostWindow — main window: UI, target actions, hidden-window list.
-"""
-
 import os
 import time
 import threading
@@ -30,7 +26,6 @@ class GhostWindow(QWidget):
     exitSignal       = Signal()
     pickSignal       = Signal(object)
     uiSignal         = Signal(str, str)
-    # qint64: HWND does not always fit into a 32-bit C++ int
     registerSignal   = Signal('qint64', 'qint64', str)
     markVisibleSignal = Signal('qint64', 'qint64')
     removeSignal     = Signal('qint64', 'qint64')
@@ -50,7 +45,7 @@ class GhostWindow(QWidget):
         self.target_hwnd  = None
         self.target_pid   = None
         self.target_title = ""
-        self.injected     = []      # ONLY touched from the GUI thread
+        self.injected     = []
         self._exiting     = False
         self._picker      = None
 
@@ -73,7 +68,6 @@ class GhostWindow(QWidget):
         else:
             self._set_status("Ready", "info")
 
-    # ─── UI ───
     def _build_ui(self):
         main = QVBoxLayout(self)
         main.setContentsMargins(0, 0, 0, 0)
@@ -89,14 +83,12 @@ class GhostWindow(QWidget):
         cl.setContentsMargins(24, 20, 24, 16)
         cl.setSpacing(16)
 
-        # Description
         header = QLabel("Hide any window from OBS / Zoom / Discord, "
                         "remove it from the taskbar, keep it always on top")
         header.setObjectName("Header")
         header.setWordWrap(True)
         cl.addWidget(header)
 
-        # ─── Target selection ───
         top_row = QHBoxLayout()
         top_row.setSpacing(10)
 
@@ -115,14 +107,12 @@ class GhostWindow(QWidget):
 
         cl.addLayout(top_row)
 
-        # Target info
         self.info_lbl = QLabel("No window selected")
         self.info_lbl.setObjectName("TargetInfo")
         self.info_lbl.setWordWrap(True)
         self.info_lbl.setMinimumHeight(48)
         cl.addWidget(self.info_lbl)
 
-        # Target actions
         act_row = QHBoxLayout()
         act_row.setSpacing(10)
 
@@ -149,13 +139,11 @@ class GhostWindow(QWidget):
 
         cl.addLayout(act_row)
 
-        # Status
         self.status_lbl = QLabel("")
         self.status_lbl.setObjectName("Status")
         self.status_lbl.setWordWrap(True)
         cl.addWidget(self.status_lbl)
 
-        # ─── List ───
         sec = QLabel("HIDDEN WINDOWS")
         sec.setObjectName("SectionTitle")
         cl.addWidget(sec)
@@ -181,7 +169,6 @@ class GhostWindow(QWidget):
 
         cl.addWidget(self.table, 1)
 
-        # Bottom bar
         bottom = QHBoxLayout()
         bottom.setSpacing(8)
 
@@ -220,14 +207,11 @@ class GhostWindow(QWidget):
         grip_row.addWidget(grip, 0, Qt.AlignRight | Qt.AlignBottom)
         cl.addLayout(grip_row)
 
-    # ─── show / hide self ───
-
     def showEvent(self, event):
         super().showEvent(event)
         QTimer.singleShot(60, lambda: apply_stealth_to_hwnd(int(self.winId())))
 
     def closeEvent(self, event):
-        # Alt+F4 must not kill the app while windows are still hidden.
         if self._exiting:
             event.accept()
             return
@@ -241,8 +225,6 @@ class GhostWindow(QWidget):
         self.raise_()
         self.activateWindow()
         QTimer.singleShot(60, lambda: apply_stealth_to_hwnd(int(self.winId())))
-        # Qt's activateWindow() is often ignored by Windows for background
-        # processes — nudge the window forward via WinAPI once it's realized.
         QTimer.singleShot(30, self._force_foreground_now)
 
     def _force_foreground_now(self):
@@ -266,11 +248,9 @@ class GhostWindow(QWidget):
         if self._exiting:
             return
         if self._picker is not None:
-            self._picker.cancel()      # cancel picking
+            self._picker.cancel()
             return
         self.toggle_self()
-
-    # ─── status ───
 
     def _set_status(self, text, kind="info"):
         colors = {
@@ -289,8 +269,6 @@ class GhostWindow(QWidget):
     def _on_exit_now(self):
         QApplication.instance().quit()
 
-    # ─── list entry mutations (GUI thread only, via signals) ───
-
     def _register_injected(self, pid, hwnd, title):
         for e in self.injected:
             if e["pid"] == pid and e["hwnd"] == hwnd:
@@ -305,7 +283,7 @@ class GhostWindow(QWidget):
             "name":   get_process_name(pid),
             "title":  title,
             "state":  "hidden",
-            "visible": False,          # False = re-hide watchdog is allowed
+            "visible": False,
         })
         self.refresh_list()
 
@@ -320,8 +298,6 @@ class GhostWindow(QWidget):
         self.injected = [x for x in self.injected
                          if not (x["pid"] == pid and x["hwnd"] == hwnd)]
         self.refresh_list()
-
-    # ─── auto-refresh ───
 
     def _auto_refresh(self):
         if self._exiting:
@@ -343,8 +319,6 @@ class GhostWindow(QWidget):
                     e["state"] = new_state
                     changed = True
 
-                # Watchdog: the target app reset capture exclusion
-                # (window recreated / style cleared) — re-apply StealthHide.
                 if (new_state == "hidden"
                         and not e.get("visible")
                         and not stealth_is_active(hwnd)
@@ -368,8 +342,6 @@ class GhostWindow(QWidget):
             except Exception:
                 pass
         threading.Thread(target=job, daemon=True).start()
-
-    # ─── picking a window ───
 
     def pick(self):
         self.hide()
@@ -413,14 +385,10 @@ class GhostWindow(QWidget):
         self.btn_restore.setEnabled(True)
         self._set_status("Window selected", "ok")
 
-    # ─── target actions ───
-
     def hide_target(self):
         if not self.target_pid or not self.target_hwnd:
             return
         pid, hwnd, title = self.target_pid, self.target_hwnd, self.target_title
-        # Snapshot on the GUI thread: is the DLL already serving other
-        # windows of this process? If yes — never detach on failure.
         dll_already_serves = any(x["pid"] == pid for x in self.injected)
 
         def job():
@@ -433,8 +401,6 @@ class GhostWindow(QWidget):
                 self.uiSignal.emit("Window hidden", "ok")
             except Exception as ex:
                 if not dll_already_serves:
-                    # The DLL was loaded but the hide failed — don't leave
-                    # an orphaned module in the target process.
                     try:
                         detach_dll(pid, DLL_NAME, DLL_PATH)
                     except Exception:
@@ -453,7 +419,7 @@ class GhostWindow(QWidget):
                 if find_module_base(pid, DLL_NAME):
                     call_export(pid, DLL_NAME, DLL_PATH, "StealthShow", hwnd)
                 _restore_window(hwnd)
-                self.markVisibleSignal.emit(pid, hwnd)   # stop the watchdog
+                self.markVisibleSignal.emit(pid, hwnd)
                 self.uiSignal.emit("Window is visible again", "ok")
             except Exception as ex:
                 self.uiSignal.emit(str(ex), "err")
@@ -469,8 +435,6 @@ class GhostWindow(QWidget):
             self._set_status("Window brought to front", "ok")
         else:
             self._set_status("Failed to activate the window", "err")
-
-    # ─── list ───
 
     def refresh_list(self):
         selected = self._selected_entry()
@@ -506,7 +470,6 @@ class GhostWindow(QWidget):
             self.table.setItem(i, 2, it_title)
             self.table.setItem(i, 3, it_state)
 
-        # Preserve the selection across rebuilds
         if selected is not None:
             for i, e in enumerate(self.injected):
                 if e["pid"] == selected["pid"] and e["hwnd"] == selected["hwnd"]:
@@ -542,7 +505,6 @@ class GhostWindow(QWidget):
         if ans != QMessageBox.Yes:
             return
 
-        # Snapshot on the GUI thread: does the DLL serve other windows here?
         others_same_pid = any(x["pid"] == pid and x["hwnd"] != hwnd
                               for x in self.injected)
 
@@ -584,8 +546,6 @@ class GhostWindow(QWidget):
             return
         self._remove_entry(e["pid"], e["hwnd"])
 
-    # ─── quit ───
-
     def quit_app(self):
         if self._exiting:
             return
@@ -603,7 +563,6 @@ class GhostWindow(QWidget):
         self._exiting = True
         self._set_status("Shutting down…", "busy")
 
-        # Frozen snapshot — the worker thread must not touch live state.
         entries = list(self.injected)
         pids = {e["pid"] for e in entries}
 

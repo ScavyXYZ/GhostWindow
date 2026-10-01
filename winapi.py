@@ -1,14 +1,9 @@
-"""
-WinAPI constants, ctypes declarations, and structures.
-"""
-
 import ctypes
 from ctypes import wintypes
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 user32   = ctypes.WinDLL("user32",   use_last_error=True)
 
-# ── Process access rights ──
 PROCESS_CREATE_THREAD     = 0x0002
 PROCESS_VM_OPERATION      = 0x0008
 PROCESS_VM_READ           = 0x0010
@@ -48,7 +43,6 @@ SWP_NOZORDER     = 0x0004
 SWP_NOACTIVATE   = 0x0010
 SWP_FRAMECHANGED = 0x0020
 
-# ── Global hotkey ──
 WM_HOTKEY    = 0x0312
 MOD_CONTROL  = 0x0002
 MOD_SHIFT    = 0x0004
@@ -79,7 +73,6 @@ class MODULEENTRY32W(ctypes.Structure):
     ]
 
 
-# ── kernel32 signatures ──
 kernel32.OpenProcess.argtypes        = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
 kernel32.OpenProcess.restype         = wintypes.HANDLE
 kernel32.CloseHandle.argtypes        = [wintypes.HANDLE]
@@ -125,7 +118,6 @@ kernel32.Module32NextW.restype       = wintypes.BOOL
 kernel32.GetConsoleWindow.argtypes   = []
 kernel32.GetConsoleWindow.restype    = wintypes.HWND
 
-# ── user32 signatures ──
 user32.GetCursorPos.argtypes         = [ctypes.POINTER(POINT)]
 user32.GetCursorPos.restype          = wintypes.BOOL
 user32.WindowFromPoint.argtypes      = [POINT]
