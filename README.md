@@ -11,7 +11,7 @@ Works by injecting a DLL into the target process and using `SetWindowDisplayAffi
 - Hide a window from screen capture (OBS, Zoom, Discord, Teams, etc.)
 - Remove from taskbar and Alt+Tab
 - Keep on top of other windows
-- Hotkey `Ctrl+Shift+F1` — show/hide GhostWindow itself
+- Hotkeys — show/hide GhostWindow, pin/unpin target, bring to front
 - Pick mode with countdown timer to select a window under the cursor
 - Watchdog — automatically re-hides if the target process resets window styles
 - Cursor lock — forces the default arrow cursor on hidden windows (prevents custom cursors from appearing)
@@ -78,10 +78,15 @@ python ghostwindow.py
 - Select it in the **"HIDDEN WINDOWS"** list and click **"Show"** or **"Restore"**
 - Or click **"Restore"** in the bottom bar to restore all windows
 
-### Hotkey
+### Hotkeys
 
-- `Ctrl+Shift+F1` — show/hide the GhostWindow window
-- During pick mode — cancel the selection
+| Hotkey | Action |
+|--------|--------|
+| `Ctrl+Shift+F3` | Show/hide the GhostWindow window |
+| `Ctrl+Shift+F4` | Pin/unpin the selected window (toggle always-on-top) |
+| `Ctrl+Shift+F5` | Bring the selected window to front |
+
+- During pick mode, `Ctrl+Shift+F3` cancels the selection
 
 ### Buttons
 
