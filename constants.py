@@ -2,8 +2,9 @@ import os
 
 DLL_NAME    = "GhostWindow.dll"
 DLL_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), DLL_NAME)
-HOTKEY_TEXT     = "Ctrl+Shift+F3"
-HOTKEY_TEXT_PIN = "Ctrl+Shift+F4"
+HOTKEY_TEXT       = "Ctrl+Shift+F3"
+HOTKEY_TEXT_PIN   = "Ctrl+Shift+F4"
+HOTKEY_TEXT_FRONT = "Ctrl+Shift+F5"
 
 
 STYLESHEET = """

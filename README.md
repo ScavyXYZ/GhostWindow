@@ -14,6 +14,7 @@ Works by injecting a DLL into the target process and using `SetWindowDisplayAffi
 - Hotkey `Ctrl+Shift+F1` — show/hide GhostWindow itself
 - Pick mode with countdown timer to select a window under the cursor
 - Watchdog — automatically re-hides if the target process resets window styles
+- Cursor lock — forces the default arrow cursor on hidden windows (prevents custom cursors from appearing)
 - Restore windows individually or all at once on exit
 
 ---
@@ -111,6 +112,7 @@ GhostWindow/
 ├── hotkey.py         — global hotkey filter
 ├── titlebar.py       — custom title bar widget
 ├── picker.py         — picker overlay for window selection
+├── cursor_lock.py    — in-process cursor lock (forces arrow cursor)
 ├── GhostWindow.cpp   — DLL source
 ├── GhostWindow.def   — DLL exports
 └── GhostWindow.dll   — built DLL
@@ -126,6 +128,7 @@ GhostWindow/
    - `WS_EX_TOOLWINDOW` — remove from taskbar
    - `HWND_TOPMOST` — keep on top
 3. **StealthShow** — restore the original state (styles are saved in window properties)
+4. **Cursor Lock** — `cursor_lock.py` hooks `WM_SETCURSOR` and mouse messages on the target window and all its children, forcing the default arrow cursor. A watchdog timer (~30 ms) re-applies the cursor if Qt or the target app changes it programmatically.
 
 ---
 

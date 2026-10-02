@@ -7,9 +7,10 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from winapi import (
     user32,
     HOTKEY_ID, MOD_CONTROL, MOD_SHIFT, MOD_NOREPEAT, VK_F3,
-    HOTKEY_ID_PIN, VK_F4,                                          # NEW
+    HOTKEY_ID_PIN, VK_F4,
+    HOTKEY_ID_FRONT, VK_F5,
 )
-from constants import DLL_NAME, DLL_PATH, STYLESHEET, HOTKEY_TEXT, HOTKEY_TEXT_PIN
+from constants import DLL_NAME, DLL_PATH, STYLESHEET, HOTKEY_TEXT, HOTKEY_TEXT_PIN, HOTKEY_TEXT_FRONT
 from hotkey import HotkeyFilter
 from main_window import GhostWindow
 
@@ -67,6 +68,19 @@ def main():
     else:
         win._set_status(
             f"Hotkey {HOTKEY_TEXT_PIN} is already taken by another application",
+            "err")
+
+    # hotkey для bring to front
+    front_filter = HotkeyFilter(HOTKEY_ID_FRONT, win.on_hotkey_front)
+
+    if user32.RegisterHotKey(None, HOTKEY_ID_FRONT,
+                             MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_F5):
+        app.installNativeEventFilter(front_filter)
+        app.aboutToQuit.connect(
+            lambda: user32.UnregisterHotKey(None, HOTKEY_ID_FRONT))
+    else:
+        win._set_status(
+            f"Hotkey {HOTKEY_TEXT_FRONT} is already taken by another application",
             "err")
 
     sys.exit(app.exec())

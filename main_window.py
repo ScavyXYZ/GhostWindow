@@ -305,6 +305,14 @@ class GhostWindow(QWidget):
         self.btn_pin.setChecked(not self.btn_pin.isChecked())
         self.toggle_pin_target()
 
+    def on_hotkey_front(self):
+        if self._exiting or self._picker is not None:
+            return
+        if not self.target_hwnd:
+            self._set_status("Спочатку виберіть вікно", "err")
+            return
+        self.restore_target()
+
     # --------------------------------------------------------------- status
     def _set_status(self, text, kind="info"):
         colors = {
