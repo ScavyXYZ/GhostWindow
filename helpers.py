@@ -6,9 +6,11 @@ from winapi import (
     kernel32, user32,
     PROCESS_QUERY_LIMITED, GA_ROOT, WDA_EXCLUDEFROMCAPTURE, WDA_MONITOR,
     SW_RESTORE, SW_SHOW, GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_APPWINDOW,
+    WS_EX_TOPMOST, WS_EX_NOACTIVATE, WS_EX_LAYERED, HWND_TOPMOST, HWND_NOTOPMOST,
     SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_NOACTIVATE, SWP_FRAMECHANGED,
     TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, MODULEENTRY32W,
-    POINT, VK_MENU, KEYEVENTF_KEYUP,
+    POINT, RECT, GW_OWNER,
+    VK_MENU, KEYEVENTF_KEYUP,
 )
 
 
@@ -91,6 +93,95 @@ def stealth_is_active(hwnd):
         return False
     return aff.value in (WDA_EXCLUDEFROMCAPTURE, WDA_MONITOR)
 
+
+# --- pin helpers -----------------------------------------------------------
+
+def is_pinned(hwnd) -> bool:
+    if not hwnd or not user32.IsWindow(hwnd):
+        return False
+    hwnd = get_root(hwnd)
+    ex = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    return bool(ex & WS_EX_TOPMOST)
+
+
+def set_pinned(hwnd, pinned: bool) -> bool:
+    if not hwnd or not user32.IsWindow(hwnd):
+        return False
+    hwnd = get_root(hwnd)
+    insert_after = HWND_TOPMOST if pinned else HWND_NOTOPMOST
+    return bool(user32.SetWindowPos(
+        hwnd, insert_after, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+    ))
+
+
+# --- NEW: перелік вікон процесу -------------------------------------------
+
+_WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+
+def _is_candidate_window(hwnd) -> bool:
+    """Фільтр: чи варто ховати це top-level вікно."""
+    if not user32.IsWindow(hwnd):
+        return False
+    if not user32.IsWindowVisible(hwnd):
+        return False
+
+    ex = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+    if ex & WS_EX_TOOLWINDOW:
+        return False
+    if (ex & WS_EX_NOACTIVATE) and (ex & WS_EX_LAYERED):
+        return False
+
+    if get_title(hwnd):
+        return True
+
+    rect = RECT()
+    if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+        return False
+    w = rect.right - rect.left
+    h = rect.bottom - rect.top
+    return w > 32 and h > 32
+
+
+def enum_process_windows(pid: int):
+    """Повертає список HWND усіх top-level вікон процесу pid,
+    які має сенс ховати (видимі, не службові)."""
+    result = []
+
+    def _cb(hwnd, _):
+        wpid = wintypes.DWORD(0)
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+        if wpid.value != pid:
+            return True
+        if _is_candidate_window(hwnd):
+            result.append(int(hwnd))
+        return True
+
+    cb = _WNDENUMPROC(_cb)
+    user32.EnumWindows(cb, 0)
+    return result
+
+
+def enum_owned_windows(hwnd: int):
+    """Повертає список top-level вікон, що належать hwnd (owned popup-и)."""
+    result = []
+    hwnd = get_root(hwnd)
+    if not hwnd:
+        return result
+
+    def _cb(h, _):
+        owner = user32.GetWindow(h, GW_OWNER)
+        if owner == hwnd and _is_candidate_window(h):
+            result.append(int(h))
+        return True
+
+    cb = _WNDENUMPROC(_cb)
+    user32.EnumWindows(cb, 0)
+    return result
+
+
+# --- existing helpers ------------------------------------------------------
 
 def _restore_window(hwnd):
     if not hwnd or not user32.IsWindow(hwnd):

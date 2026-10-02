@@ -5,6 +5,12 @@
 // MinGW-w64:
 //   g++ -O2 -shared -o GhostWindow.dll GhostWindow.cpp GhostWindow.def -luser32 -static
 
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
 #include <Windows.h>
 
 #pragma comment(lib, "user32.lib")
@@ -24,6 +30,10 @@ static const wchar_t PROP_SAVED[]       = L"GW_Saved";
 static const wchar_t PROP_ORIG_PROC[]   = L"GW_OrigProc";
 static const wchar_t PROP_PROC_HOOKED[] = L"GW_ProcHooked";
 static const wchar_t PROP_LOCK_OFF[]    = L"GW_LockOff";
+
+// NEW: pin props
+static const wchar_t PROP_PINNED[]      = L"GW_Pinned";
+static const wchar_t PROP_WAS_TOP[]     = L"GW_WasTopmost";
 
 // ===========================================================================
 // Cursor lock
@@ -165,7 +175,6 @@ static void CALLBACK NewWindowEvent(HWINEVENTHOOK, DWORD event, HWND hwnd,
     if (event != EVENT_OBJECT_CREATE && event != EVENT_OBJECT_SHOW)
         return;
 
-    // Only trees that belong to a hidden (locked) root window.
     HWND root = GetAncestor(hwnd, GA_ROOT);
     if (root && GetPropW(root, PROP_PROC_HOOKED))
         HookSingleWindow(hwnd);
@@ -180,9 +189,6 @@ static void AcquireNewWindowHook()
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
             reinterpret_cast<LPCWSTR>(&CursorLockProc), &self);
 
-        // idProcess = our own PID is ESSENTIAL: a WINEVENT_INCONTEXT hook
-        // without a process filter would make the system load this DLL
-        // into every process on the desktop.
         g_newWndHook = SetWinEventHook(
             EVENT_OBJECT_CREATE, EVENT_OBJECT_SHOW,
             self, NewWindowEvent,
@@ -205,7 +211,7 @@ static void ReleaseNewWindowHook()
 
 extern "C" __declspec(dllexport) DWORD WINAPI GhostVersion(void)
 {
-    return 2;   // bumped so you can verify the new DLL actually loaded
+    return 3;   // NEW: bump — тепер підтримується pin
 }
 
 extern "C" __declspec(dllexport) DWORD WINAPI StealthHide(LPVOID param)
@@ -241,9 +247,8 @@ extern "C" __declspec(dllexport) DWORD WINAPI StealthHide(LPVOID param)
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-    // Freeze the cursor over the hidden window.
     BOOL already_locked = GetPropW(hwnd, PROP_PROC_HOOKED) != nullptr;
-    InstallCursorLock(hwnd);          // idempotent; also picks up new children
+    InstallCursorLock(hwnd);
     if (!already_locked)
         AcquireNewWindowHook();
 
@@ -260,7 +265,6 @@ extern "C" __declspec(dllexport) DWORD WINAPI StealthShow(LPVOID param)
     if (!hwnd || !IsWindow(hwnd))
         return 1;
 
-    // Give the window its own cursor handling back BEFORE anything else.
     if (GetPropW(hwnd, PROP_PROC_HOOKED)) {
         RemoveCursorLock(hwnd);
         ReleaseNewWindowHook();
@@ -285,8 +289,11 @@ extern "C" __declspec(dllexport) DWORD WINAPI StealthShow(LPVOID param)
     SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex);
     DWORD err = GetLastError();
 
+    // NEW: якщо користувач окремо закріпив вікно (StealthPin), не скидаємо topmost
+    BOOL pinned = GetPropW(hwnd, PROP_PINNED) != nullptr;
+
     SetWindowPos(hwnd,
-                 was_topmost ? HWND_TOPMOST : HWND_NOTOPMOST,
+                 (pinned || was_topmost) ? HWND_TOPMOST : HWND_NOTOPMOST,
                  0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
@@ -295,6 +302,58 @@ extern "C" __declspec(dllexport) DWORD WINAPI StealthShow(LPVOID param)
         RemovePropW(hwnd, PROP_SAVED);
     }
     return err;
+}
+
+// --- NEW: pin / unpin -------------------------------------------------------
+
+extern "C" __declspec(dllexport) DWORD WINAPI StealthPin(LPVOID param)
+{
+    HWND hwnd = reinterpret_cast<HWND>(param);
+    if (!hwnd || !IsWindow(hwnd))
+        return 1;
+
+    hwnd = GetAncestor(hwnd, GA_ROOT);
+    if (!hwnd || !IsWindow(hwnd))
+        return 1;
+
+    if (!GetPropW(hwnd, PROP_PINNED)) {
+        LONG_PTR ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        BOOL was_top = (ex & WS_EX_TOPMOST) ? TRUE : FALSE;
+        SetPropW(hwnd, PROP_WAS_TOP, reinterpret_cast<HANDLE>(was_top));
+        SetPropW(hwnd, PROP_PINNED,  reinterpret_cast<HANDLE>(1));
+    }
+
+    if (!SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE))
+        return GetLastError();
+
+    return 0;
+}
+
+extern "C" __declspec(dllexport) DWORD WINAPI StealthUnpin(LPVOID param)
+{
+    HWND hwnd = reinterpret_cast<HWND>(param);
+    if (!hwnd || !IsWindow(hwnd))
+        return 1;
+
+    hwnd = GetAncestor(hwnd, GA_ROOT);
+    if (!hwnd || !IsWindow(hwnd))
+        return 1;
+
+    BOOL was_top = FALSE;
+    if (GetPropW(hwnd, PROP_PINNED)) {
+        was_top = reinterpret_cast<LONG_PTR>(
+                      GetPropW(hwnd, PROP_WAS_TOP)) ? TRUE : FALSE;
+        RemovePropW(hwnd, PROP_WAS_TOP);
+        RemovePropW(hwnd, PROP_PINNED);
+    }
+
+    if (!SetWindowPos(hwnd, was_top ? HWND_TOPMOST : HWND_NOTOPMOST,
+                      0, 0, 0, 0,
+                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE))
+        return GetLastError();
+
+    return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID)

@@ -36,6 +36,9 @@ SW_RESTORE = 9
 GWL_EXSTYLE      = -20
 WS_EX_TOOLWINDOW = 0x00000080
 WS_EX_APPWINDOW  = 0x00040000
+WS_EX_TOPMOST    = 0x00000008
+WS_EX_NOACTIVATE = 0x08000000      # NEW
+WS_EX_LAYERED    = 0x00080000      # NEW
 
 SWP_NOSIZE       = 0x0001
 SWP_NOMOVE       = 0x0002
@@ -43,19 +46,33 @@ SWP_NOZORDER     = 0x0004
 SWP_NOACTIVATE   = 0x0010
 SWP_FRAMECHANGED = 0x0020
 
+HWND_TOPMOST   = -1
+HWND_NOTOPMOST = -2
+
 WM_HOTKEY    = 0x0312
 MOD_CONTROL  = 0x0002
 MOD_SHIFT    = 0x0004
 MOD_NOREPEAT = 0x4000
-HOTKEY_ID    = 1
+HOTKEY_ID     = 1
+HOTKEY_ID_PIN = 2
 
 VK_F3           = 0x72
+VK_F4           = 0x73
 VK_MENU         = 0x12
 KEYEVENTF_KEYUP = 0x0002
+
+GW_OWNER = 4                       # NEW
 
 
 class POINT(ctypes.Structure):
     _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+
+class RECT(ctypes.Structure):      # NEW
+    _fields_ = [("left",   ctypes.c_long),
+                ("top",    ctypes.c_long),
+                ("right",  ctypes.c_long),
+                ("bottom", ctypes.c_long)]
 
 
 class MODULEENTRY32W(ctypes.Structure):
@@ -132,6 +149,8 @@ user32.GetWindowTextW.argtypes       = [wintypes.HWND, wintypes.LPWSTR, ctypes.c
 user32.GetWindowTextW.restype        = ctypes.c_int
 user32.IsWindow.argtypes             = [wintypes.HWND]
 user32.IsWindow.restype              = wintypes.BOOL
+user32.IsWindowVisible.argtypes      = [wintypes.HWND]     # NEW
+user32.IsWindowVisible.restype       = wintypes.BOOL       # NEW
 user32.IsIconic.argtypes             = [wintypes.HWND]
 user32.IsIconic.restype              = wintypes.BOOL
 user32.SetWindowDisplayAffinity.argtypes = [wintypes.HWND, wintypes.DWORD]
@@ -161,3 +180,11 @@ user32.UnregisterHotKey.restype      = wintypes.BOOL
 user32.PeekMessageW.argtypes         = [ctypes.POINTER(wintypes.MSG), wintypes.HWND,
                                         wintypes.UINT, wintypes.UINT, wintypes.UINT]
 user32.PeekMessageW.restype          = wintypes.BOOL
+
+# NEW: для переліку вікон процесу
+user32.EnumWindows.argtypes          = [ctypes.c_void_p, wintypes.LPARAM]
+user32.EnumWindows.restype           = wintypes.BOOL
+user32.GetWindow.argtypes            = [wintypes.HWND, wintypes.UINT]
+user32.GetWindow.restype             = wintypes.HWND
+user32.GetWindowRect.argtypes        = [wintypes.HWND, ctypes.POINTER(RECT)]
+user32.GetWindowRect.restype         = wintypes.BOOL

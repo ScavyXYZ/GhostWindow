@@ -2,7 +2,8 @@ import os
 
 DLL_NAME    = "GhostWindow.dll"
 DLL_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), DLL_NAME)
-HOTKEY_TEXT = "Ctrl+Shift+F3"
+HOTKEY_TEXT     = "Ctrl+Shift+F3"
+HOTKEY_TEXT_PIN = "Ctrl+Shift+F4"
 
 
 STYLESHEET = """
@@ -96,6 +97,17 @@ QPushButton:disabled {
     background-color: transparent;
 }
 
+QPushButton:checked {
+    background-color: #1c2a44;
+    border-color: #3b6ea8;
+    color: #cfe3ff;
+}
+QPushButton:checked:hover {
+    background-color: #223255;
+    border-color: #4b86c4;
+    color: #ffffff;
+}
+
 QPushButton#PrimaryBtn {
     background-color: #f0f0f5;
     color: #0f0f13;
@@ -182,6 +194,39 @@ QMessageBox QLabel { color: #d8d8e0; }
 QMessageBox QPushButton {
     min-width: 90px;
     padding: 8px 16px;
+}
+
+QMenu {
+    background-color: #16161c;
+    border: 1px solid #30303c;
+    padding: 4px;
+}
+QMenu::item {
+    padding: 6px 18px;
+    border-radius: 4px;
+}
+QMenu::item:selected {
+    background-color: #1e1e26;
+    color: #ffffff;
+}
+
+QCheckBox {
+    color: #b8b8c4;
+    spacing: 8px;
+}
+QCheckBox::indicator {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #30303c;
+    border-radius: 3px;
+    background-color: #13131a;
+}
+QCheckBox::indicator:hover {
+    border-color: #4a4a58;
+}
+QCheckBox::indicator:checked {
+    background-color: #3b6ea8;
+    border-color: #3b6ea8;
 }
 
 QSizeGrip {
